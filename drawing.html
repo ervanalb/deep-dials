@@ -1,6 +1,83 @@
 <html>
+<style>
+.row {
+  display: flex;
+}
+
+.column {
+  flex: 50%;
+}
+</style>
 <body>
-<object id="lock-svg" data="drawing.svg" type="image/svg+xml" onload="this.contentDocument.dial()"></object>
-<button onclick="document.getElementById('lock-svg').setWheels([1, 2, 3, 4]);">Rotate</button>
+<div class="row">
+<div class="column">
+    <object id="lock-svg" data="drawing.svg" type="image/svg+xml" onload="lockLoaded()"></object>
+</div>
+<div class="column">
+    <table>
+    <tr>
+        <td></td>
+        <td><button onclick="lock.dial('U', speed);">U</button></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><button onclick="lock.dial('L', speed);">L</button></td>
+        <td></td>
+        <td><button onclick="lock.dial('R', speed);">R</button></td><td></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><button onclick="lock.dial('D', speed);">D</button></td>
+        <td></td>
+    </tr>
+    </table>
+    <button onclick="lock.reset(speed);">Reset</button>
+    <div>Lock state: <span id="lock-state"></span></div>
+    <div>Speed: <select id="speed-picker" onchange="speedChanged()">
+        <option value="0s">Instant</option>
+        <option value="0.2s">Fast</option>
+        <option value="1s" selected>Normal</option>
+        <option value="4s">Slow</option>
+    </select></div>
+    <form onsubmit="dialCombo();event.preventDefault();">
+        Autodialer:
+        <input id="combo">
+        <input type="submit" value="Go">
+        <span id="autodialer-error"></span>
+    </form>
+</div>
+</div>
+<script>
+let lock = undefined;
+let speed = "1s";
+
+const lockLoaded = () => {
+    lock = document.getElementById('lock-svg').contentDocument;
+    lock.wheelsChanged = (w) => {
+        document.getElementById("lock-state").innerText = w.join(" ");
+    };
+}
+
+const speedChanged = () => {
+    speed = document.getElementById('speed-picker').value;
+};
+
+const dialCombo = () => {
+    combo = document.getElementById('combo').value;
+
+    combo = combo.toUpperCase();
+    combo = combo.replace(" ", "");
+
+    for (let i=0; i<combo.length; i++) {
+        if ("URDL".indexOf(combo[i]) < 0) {
+            document.getElementById("autodialer-error").innerText = `Invalid direction: "${combo[i]}"`;
+            return;
+        }
+    }
+
+    document.getElementById("autodialer-error").innerText = "";
+    lock.dial(combo, speed);
+}
+</script>
 </body>
 </html>

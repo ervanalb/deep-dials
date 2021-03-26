@@ -403,19 +403,27 @@
      id="script1036">//<![CDATA[
 
     document.wheels = [0, 0, 0, 0];
+    document.wheelsChanged = undefined; // Optional callback
 
     document.setWheels = newWheels => {
-      for(let i = 0; i < 4; i++) {
-        document.getElementById(`wheel-${i}`).setAttribute("transform", `rotate(${-newWheels[i] * 24})`);
+      for (let i=0; i<4; i++) {
+        document.wheels[i] = ((newWheels[i] % 15) + 15) % 15;
       }
+
+      for(let i = 0; i < 4; i++) {
+        document.getElementById(`wheel-${i}`).setAttribute("transform", `rotate(${-document.wheels[i] * 24})`);
+      }
+
+      document.wheelsChanged && document.wheelsChanged(document.wheels);
     }
 
-    const controlPlateAnim = (direction, dur) => {
+    const controlPlateAnim = (direction, dur, callback) => {
+      const DEPTH = 19.5;
       const pos = {
-        "U": [0, -20],
-        "R": [20, 0],
-        "D": [0, 20],
-        "L": [-20, 0],
+        "U": [0, -DEPTH],
+        "R": [DEPTH, 0],
+        "D": [0, DEPTH],
+        "L": [-DEPTH, 0],
       }[direction];
 
       const controlPlate = document.getElementById("control-plate");
@@ -428,16 +436,20 @@
       a.setAttribute("keyTimes", "0; 0.5; 1");
       a.setAttribute("fill", "freeze");
       controlPlate.appendChild(a);
+      a.addEventListener("endEvent", () => {
+        controlPlate.removeChild(a);
+        callback();
+      });
       a.beginElement();
     };
 
     const wheelAnim = (wheelIndex, startAngle, interactionType, dur) => {
-      const alphaKeyValues = "0;24";
-      const alphaKeyTimes = "0;1";
-      const betaKeyValues = "0;48";
-      const betaKeyTimes = "0;1";
-      const gammaKeyValues = "0;72";
-      const gammaKeyTimes = "0;1";
+      const alphaKeyValues = "0;0;-32;-32;9;9;24;24";
+      const alphaKeyTimes = "0;0.08;0.28;0.37;0.5;0.7;0.8;1";
+      const betaKeyValues = "0;0;-12;-12;9;9;48;48";
+      const betaKeyTimes = "0;0.21;0.3;0.4;0.5;0.65;0.82;1";
+      const gammaKeyValues = "0;0;46;46;72;72";
+      const gammaKeyTimes = "0;0.38;0.50;0.65;0.78;1";
 
       const [keyValues, keyTimes] = {
         "alpha": [alphaKeyValues, alphaKeyTimes],
@@ -462,15 +474,89 @@
       a.setAttribute("keyTimes", keyTimes);
       a.setAttribute("fill", "freeze");
       wheel.appendChild(a);
+      a.addEventListener("endEvent", () => {
+        wheel.removeChild(a);
+      });
       a.beginElement();
     };
 
-    document.dial = direction => {
-      dur = "8s";
-      controlPlateAnim("U", dur);
-      wheelAnim(0, 0, "gamma", dur);
-      wheelAnim(1, 0, "alpha", dur);
-      wheelAnim(3, 0, "beta", dur);
+    const dialOneDirection = (direction, dur, callback) => {
+      const oldWheels = document.wheels;
+      const towards = {"U": 0, "R": 1, "D": 2, "L": 3}[direction]
+      right = (towards + 1) % 4;
+      away = (towards + 2) % 4;
+      left = (towards + 3) % 4;
+      const newWheels = [undefined, undefined, undefined, undefined];
+      newWheels[towards] = 3 * Math.floor((oldWheels[towards] + 3) / 3);
+      newWheels[left] = 3 * Math.floor((oldWheels[left] + 1) / 3) + 2;
+      newWheels[right] = 3 * Math.floor((oldWheels[right] + 2) / 3) + 1;
+      newWheels[away] = oldWheels[away];
+
+      for (let i = 0; i < 4; i++) {
+        if (newWheels[i] == oldWheels[i]) {
+          continue;
+        }
+
+        const interaction = {
+            1: "alpha",
+            2: "beta",
+            3: "gamma",
+        }[newWheels[i] - oldWheels[i]];
+
+        wheelAnim(i, oldWheels[i], interaction, dur);
+      }
+
+      controlPlateAnim(direction, dur, () => {
+        document.setWheels(newWheels);
+        callback();
+      });
+    };
+
+    document.dial = (directions, dur, callback) => {
+      const dialHelper = (d) => {
+        dialOneDirection(d[0], dur, () => {
+          const nextDirections = d.substring(1);
+          if (nextDirections) {
+            dialHelper(nextDirections);
+          } else {
+            callback && callback();
+          }
+        });
+      };
+      dialHelper(directions);
+    };
+
+    document.reset = (dur, callback) => {
+      const animWheel = i => {
+        const curValue = -document.wheels[i] * 24;
+        const resetValue = curValue < -180 ? -360 : 0;
+
+        const wheel = document.getElementById(`wheel-${i}`);
+        const a = document.createElementNS("http://www.w3.org/2000/svg", "animateTransform");
+        a.setAttribute("attributeName", "transform");
+        a.setAttribute("attributeType", "XML");
+        a.setAttribute("type", "rotate");
+        a.setAttribute("dur", dur);
+        a.setAttribute("from", curValue);
+        a.setAttribute("to", resetValue);
+        a.setAttribute("fill", "freeze");
+        wheel.appendChild(a);
+        a.addEventListener("endEvent", () => {
+          wheel.removeChild(a);
+          if (i == 0) {
+            document.setWheels([0, 0, 0, 0]);
+            callback && callback();
+          }
+        });
+        a.beginElement();
+      };
+
+      for (let i = 0; i < 4; i++) {
+        animWheel(i);
+      }
     }
+
+    // Removing or shortening this initial animation makes the thing not work
+    document.reset("1s");
   //]]></script>
 </svg>
