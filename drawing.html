@@ -1,12 +1,93 @@
 <html>
 <style>
+body {
+    height: 90vh;
+    overflow: hidden;
+    font-family: sans-serif;
+    font-size: 16px;
+}
+
 .row {
   display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+}
+
+#lock-svg {
+    height: 100%;
 }
 
 .column {
-  flex: 50%;
+  margin: 10px 40px;
+  vertical-align: center;
 }
+
+h1 {
+  margin-block-start: 30px;
+  margin-block-end: 10px;
+  font-weight: normal;
+  font-size: 30px;
+}
+
+.content-div {
+  margin-block-start: 10px;
+  margin-block-end: 20px;
+}
+
+button,input[type=submit] {
+  background-color: #B3B3DA;
+  border: 1px solid black;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  border-radius: 4px;
+  transition-duration: 0.4s;
+}
+
+.dial-button {
+  height: 75px;
+  width: 75px;
+  padding: 5px 5px;
+  font-size: 20px;
+}
+
+.state-readout {
+  font-size: 20px;
+  line-height: 30px;
+  height: 30px;
+  word-spacing: 10px;
+}
+
+button:hover {
+  background-color: #EEF;
+}
+
+.dial-table {
+  margin: auto;
+  text-align: center;
+}
+
+.controls {
+  display: block;
+  margin: auto;
+  width: 300px;
+  background-color: #EEE;
+  padding: 0px 20px;
+  border: 1px solid black;
+  border-radius: 12px;
+}
+
+input[type=text], select {
+    font-family: sans-serif;
+    font-size: 16px;
+    margin: 10px 0px;
+    padding: 5px;
+}
+
 </style>
 <body>
 <div class="row">
@@ -14,37 +95,43 @@
     <object id="lock-svg" data="drawing.svg" type="image/svg+xml" onload="lockLoaded()"></object>
 </div>
 <div class="column">
-    <table>
+<div class="controls">
+    <h1>Manual Dial</h1>
+    <table class="dial-table">
     <tr>
         <td></td>
-        <td><button onclick="lock.dial('U', speed);">U</button></td>
+        <td><button class="dial-button" onclick="lock.dial('U', speed);" id="wheel-0-state">U</button></td>
         <td></td>
     </tr>
     <tr>
-        <td><button onclick="lock.dial('L', speed);">L</button></td>
+        <td><button class="dial-button" onclick="lock.dial('L', speed);" id="wheel-3-state">L</button></td>
         <td></td>
-        <td><button onclick="lock.dial('R', speed);">R</button></td><td></td>
+        <td><button class="dial-button" onclick="lock.dial('R', speed);" id="wheel-1-state">R</button></td><td></td>
     </tr>
     <tr>
         <td></td>
-        <td><button onclick="lock.dial('D', speed);">D</button></td>
+        <td><button class="dial-button" onclick="lock.dial('D', speed);" id="wheel-2-state">D</button></td>
         <td></td>
+    </tr>
+    <tr>
+      <td colspan="3"><button onclick="lock.reset(speed);" style="width: 100%;">Reset</button></td>
     </tr>
     </table>
-    <button onclick="lock.reset(speed);">Reset</button>
-    <div>Lock state: <span id="lock-state"></span></div>
-    <div>Speed: <select id="speed-picker" onchange="speedChanged()">
+    <h1>Auto Dial</h1>
+    <div class="state-readout">State: <span id="wheel-all-state"></span></div>
+    <form onsubmit="dialCombo();event.preventDefault();">
+        <input type="text" id="combo" style="width: 100%;">
+        <div class="content-div" id="autodialer-error"></div>
+        <input type="submit" value="Go" style="width: 100%;">
+    </form>
+    <h1>Speed</h1>
+    <div class="content-div"><select id="speed-picker" onchange="speedChanged()">
         <option value="0s">Instant</option>
         <option value="0.2s">Fast</option>
         <option value="1s" selected>Normal</option>
         <option value="4s">Slow</option>
     </select></div>
-    <form onsubmit="dialCombo();event.preventDefault();">
-        Autodialer:
-        <input id="combo">
-        <input type="submit" value="Go">
-        <span id="autodialer-error"></span>
-    </form>
+</div>
 </div>
 </div>
 <script>
@@ -54,7 +141,10 @@ let speed = "1s";
 const lockLoaded = () => {
     lock = document.getElementById('lock-svg').contentDocument;
     lock.wheelsChanged = (w) => {
-        document.getElementById("lock-state").innerText = w.join(" ");
+        for (let i = 0; i < 4; i++) {
+            document.getElementById(`wheel-${i}-state`).innerText = w[i];
+        }
+        document.getElementById(`wheel-all-state`).innerText = w.join(" ");
     };
 }
 
