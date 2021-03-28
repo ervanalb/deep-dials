@@ -2,7 +2,6 @@
 <style>
 body {
     height: 90vh;
-    overflow: hidden;
     font-family: sans-serif;
     font-size: 16px;
 }
@@ -120,7 +119,7 @@ input[type=text], select {
     <h1>Auto Dial</h1>
     <div class="state-readout">State: <span id="wheel-all-state"></span></div>
     <form onsubmit="dialCombo();event.preventDefault();">
-        <input type="text" id="combo" style="width: 100%;">
+        <input type="text" id="combo" style="width: 100%;" value="U D L R">
         <div class="content-div" id="autodialer-error"></div>
         <input type="submit" value="Go" style="width: 100%;">
     </form>
@@ -156,7 +155,7 @@ const dialCombo = () => {
     combo = document.getElementById('combo').value;
 
     combo = combo.toUpperCase();
-    combo = combo.replace(" ", "");
+    combo = combo.replaceAll(" ", "");
 
     for (let i=0; i<combo.length; i++) {
         if ("URDL".indexOf(combo[i]) < 0) {
