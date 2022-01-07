@@ -1127,19 +1127,22 @@
       }[direction];
 
       const controlPlate = document.getElementById("control-plate");
-      const a = document.createElementNS("http://www.w3.org/2000/svg", "animateTransform");
-      a.setAttribute("attributeName", "transform");
-      a.setAttribute("attributeType", "XML");
-      a.setAttribute("type", "translate");
-      a.setAttribute("dur", dur);
+      const needsAnimationTagAdded = !controlPlate.getElementsByTagName('animateTransform').length;
+      const a = (needsAnimationTagAdded ?
+                 document.createElementNS("http://www.w3.org/2000/svg", "animateTransform") :
+                 controlPlate.getElementsByTagName('animateTransform')[0]);
+      if (needsAnimationTagAdded) {
+          a.setAttribute("attributeName", "transform");
+          a.setAttribute("attributeType", "XML");
+          a.setAttribute("type", "translate");
+          a.setAttribute("keyTimes", "0; 0.5; 1");
+          a.setAttribute("fill", "freeze");
+          controlPlate.appendChild(a);
+      }
+
       a.setAttribute("values", `0 0; ${pos[0]} ${pos[1]}; 0 0`);
-      a.setAttribute("keyTimes", "0; 0.5; 1");
-      a.setAttribute("fill", "freeze");
-      controlPlate.appendChild(a);
-      a.addEventListener("endEvent", () => {
-        controlPlate.removeChild(a);
-        callback();
-      });
+      a.setAttribute("dur", dur);
+      a.addEventListener("endEvent", callback, { once: true });
       a.beginElement();
     };
 
@@ -1165,18 +1168,24 @@
       const newKeyValues = keyValues.split(";").map(v => -(parseFloat(v) + 24 * startAngle)).join(";");
 
       const wheel = document.getElementById(`wheel-${wheelIndex}`);
-      const a = document.createElementNS("http://www.w3.org/2000/svg", "animateTransform");
-      a.setAttribute("attributeName", "transform");
-      a.setAttribute("attributeType", "XML");
-      a.setAttribute("type", "rotate");
-      a.setAttribute("dur", dur);
+      const needsAnimationTagAdded = !wheel.getElementsByTagName('animateTransform').length;
+      const a = (needsAnimationTagAdded ?
+                 document.createElementNS("http://www.w3.org/2000/svg", "animateTransform") :
+                 wheel.getElementsByTagName('animateTransform')[0]);
+      if (needsAnimationTagAdded) {
+          a.setAttribute("attributeName", "transform");
+          a.setAttribute("attributeType", "XML");
+          a.setAttribute("type", "rotate");
+          a.setAttribute("fill", "freeze");
+          wheel.appendChild(a);
+      }
+
+      a.removeAttribute("from");
+      a.removeAttribute("to");
+
       a.setAttribute("values", newKeyValues);
       a.setAttribute("keyTimes", keyTimes);
-      a.setAttribute("fill", "freeze");
-      wheel.appendChild(a);
-      a.addEventListener("endEvent", () => {
-        wheel.removeChild(a);
-      });
+      a.setAttribute("dur", dur);
       a.beginElement();
     };
 
@@ -1232,22 +1241,30 @@
         const resetValue = curValue < -180 ? -360 : 0;
 
         const wheel = document.getElementById(`wheel-${i}`);
-        const a = document.createElementNS("http://www.w3.org/2000/svg", "animateTransform");
-        a.setAttribute("attributeName", "transform");
-        a.setAttribute("attributeType", "XML");
-        a.setAttribute("type", "rotate");
+        const needsAnimationTagAdded = !wheel.getElementsByTagName('animateTransform').length;
+        const a = (needsAnimationTagAdded ?
+                   document.createElementNS("http://www.w3.org/2000/svg", "animateTransform") :
+                   wheel.getElementsByTagName('animateTransform')[0]);
+        if (needsAnimationTagAdded) {
+          a.setAttribute("attributeName", "transform");
+          a.setAttribute("attributeType", "XML");
+          a.setAttribute("type", "rotate");
+          a.setAttribute("fill", "freeze");
+          wheel.appendChild(a);
+        }
+
+        a.removeAttribute("values");
+        a.removeAttribute("keyTimes");
+
         a.setAttribute("dur", dur);
         a.setAttribute("from", curValue);
         a.setAttribute("to", resetValue);
-        a.setAttribute("fill", "freeze");
-        wheel.appendChild(a);
         a.addEventListener("endEvent", () => {
-          wheel.removeChild(a);
           if (i == 0) {
             document.setWheels([0, 0, 0, 0]);
             callback && callback();
           }
-        });
+        }, { once: true });
         a.beginElement();
       };
 
@@ -1256,7 +1273,7 @@
       }
     }
 
-    // Removing or shortening this initial animation makes the thing not work
-    document.reset("1s");
+    // Removing this initial animation makes the thing not work
+    document.reset("0.001s");
   //]]></script>
 </svg>
